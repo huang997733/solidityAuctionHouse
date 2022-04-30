@@ -1,2 +1,2 @@
 # solidityAuctionHouse
-COMP90088 PA2
+Starter code for Solidity programming assignment
