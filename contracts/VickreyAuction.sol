@@ -10,7 +10,9 @@ contract VickreyAuction is Auction {
     uint public revealDeadline;
     uint public bidDepositAmount;
 
-    // TODO: place your code here
+    uint public highestBid;
+    uint public secondHighestBid;
+    mapping (address => bytes32) public bids;
 
     // constructor
     constructor(address _sellerAddress,
@@ -35,13 +37,41 @@ contract VickreyAuction is Auction {
     // Bidders can update their previous bid for free if desired.
     // Only allow commitments before biddingDeadline
     function commitBid(bytes32 bidCommitment) public payable {
-        // TODO: place your code here
+        require(time() < biddingDeadline);
+        if (bids[msg.sender] == 0)
+            require(msg.value == bidDepositAmount);
+        if (bids[msg.sender] != 0)
+            require(msg.value == 0);
+        // if (bids[msg.sender] != 0 && msg.value > 0)
+        //     payable(msg.sender).transfer(msg.value);
+        bids[msg.sender] = bidCommitment;
     }
 
     // Check that the bid (msg.value) matches the commitment.
     // If the bid is correctly opened, the bidder can withdraw their deposit.
     function revealBid(bytes32 nonce) public payable{
-        // TODO: place your code here
+        require(keccak256(abi.encodePacked(msg.value, nonce)) == bids[msg.sender]);
+        require(time() >= biddingDeadline && time() < revealDeadline);
+
+        if(msg.value < minimumPrice)
+            payable(msg.sender).transfer(bidDepositAmount);
+        
+        else if(msg.value < highestBid){
+            payable(msg.sender).transfer(bidDepositAmount + msg.value);
+
+            if (msg.value > secondHighestBid)
+                secondHighestBid = msg.value;
+        }
+        else if(msg.value > highestBid){
+          if(highestBid != 0){
+            secondHighestBid = highestBid;
+            payable(winnerAddress).transfer(highestBid);
+          }
+          highestBid = msg.value;
+          winnerAddress = msg.sender;
+          payable(msg.sender).transfer(bidDepositAmount);
+        }
+
     }
 
     // Need to override the default implementation
@@ -53,8 +83,9 @@ contract VickreyAuction is Auction {
     // finalize() must be extended here to provide a refund to the winner
     // based on the final sale price (the second highest bid, or reserve price).
     function finalize() public override {
-        // TODO: place your code here
-
+        require(time() >= revealDeadline);
+        uint refund = highestBid - secondHighestBid;
+        payable(getWinner()).transfer(refund);
         // call the general finalize() logic
         super.finalize();
     }

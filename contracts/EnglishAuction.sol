@@ -8,8 +8,10 @@ contract EnglishAuction is Auction {
     uint public initialPrice;
     uint public biddingPeriod;
     uint public minimumPriceIncrement;
-
-    // TODO: place your code here
+    
+    uint public endTime;
+    uint public currentPrice;
+    address currentWinner;
 
     // constructor
     constructor(address _sellerAddress,
@@ -24,16 +26,26 @@ contract EnglishAuction is Auction {
         biddingPeriod = _biddingPeriod;
         minimumPriceIncrement = _minimumPriceIncrement;
 
-        // TODO: place your code here
+        endTime = time() + biddingPeriod;
+        currentPrice = initialPrice - minimumPriceIncrement;
     }
 
     function bid() public payable{
-        // TODO: place your code here
+        uint min = currentPrice + minimumPriceIncrement;
+        require(msg.value >= min && time() < endTime);
+
+        if (currentWinner != address(0))
+            payable(currentWinner).transfer(currentPrice);
+
+        currentPrice = msg.value;
+        currentWinner = msg.sender;
+        endTime = time() + biddingPeriod;
     }
 
     // Need to override the default implementation
     function getWinner() public override view returns (address winner){
-        return winnerAddress;
-        // TODO: place your code here
+        if (time() < endTime)
+            return address(0);
+        return currentWinner;
     }
 }

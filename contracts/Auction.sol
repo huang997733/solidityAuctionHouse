@@ -10,8 +10,8 @@ contract Auction {
     address internal sellerAddress;
     address internal winnerAddress;
     uint winningPrice;
-
-    // TODO: place your code here
+    uint refundToBuyer;
+    uint moneyToSeller;
 
     // constructor
     constructor(address _sellerAddress,
@@ -47,19 +47,18 @@ contract Auction {
     // If a judge is specified, then only the judge or winning bidder may call.
     function finalize() public virtual {
         if (judgeAddress != address(0))
-          require(msg.sender == judgeAddress || msg.sender == getWinner());
+            require(msg.sender == judgeAddress || msg.sender == getWinner());
         require(getWinner() != address(0));
 
-        return payable(sellerAddress).transfer(this.getWinningPrice());
+        moneyToSeller = winningPrice;
     }
 
     // This can ONLY be called by seller or the judge (if a judge exists).
     // Money should only be refunded to the winner.
     function refund() public {
-        require(msg.sender == judgeAddress || msg.sender == sellerAddress);
         require(getWinner() != address(0));
-
-        return payable(getWinner()).transfer(this.getWinningPrice());
+        require(msg.sender == judgeAddress || msg.sender == sellerAddress);
+        refundToBuyer = address(this).balance;
     }
 
     // Withdraw funds from the contract.
@@ -69,6 +68,12 @@ contract Auction {
     // re-entrancy or unchecked-spend vulnerabilities.
     function withdraw() public {
         
+        if (msg.sender == sellerAddress && moneyToSeller != 0)
+            payable(msg.sender).transfer(moneyToSeller);
+            moneyToSeller = 0;
+        if (msg.sender == winnerAddress && refundToBuyer != 0)
+            payable(msg.sender).transfer(refundToBuyer);
+            refundToBuyer = 0;
     }
 
 }
