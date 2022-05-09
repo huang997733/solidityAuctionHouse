@@ -12,6 +12,7 @@ contract Auction {
     uint winningPrice;
     uint refundToBuyer;
     uint moneyToSeller;
+    bool withdrawLock;
 
     // constructor
     constructor(address _sellerAddress,
@@ -67,13 +68,19 @@ contract Auction {
     // Ensure that your withdrawal functionality is not vulnerable to
     // re-entrancy or unchecked-spend vulnerabilities.
     function withdraw() public {
-        
-        if (msg.sender == sellerAddress && moneyToSeller != 0)
-            payable(msg.sender).transfer(moneyToSeller);
-            moneyToSeller = 0;
-        if (msg.sender == winnerAddress && refundToBuyer != 0)
-            payable(msg.sender).transfer(refundToBuyer);
-            refundToBuyer = 0;
+        if(!withdrawLock) {
+            withdrawLock = true;
+            if (msg.sender == sellerAddress && moneyToSeller != 0) {
+                payable(msg.sender).transfer(moneyToSeller);
+                moneyToSeller = 0;
+            }
+            else if (msg.sender == winnerAddress && refundToBuyer != 0) {
+                payable(msg.sender).transfer(refundToBuyer);
+                refundToBuyer = 0;
+            }
+            withdrawLock = false;  
+        }
     }
+
 
 }
