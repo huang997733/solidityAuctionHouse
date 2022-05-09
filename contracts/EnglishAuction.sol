@@ -27,16 +27,20 @@ contract EnglishAuction is Auction {
         minimumPriceIncrement = _minimumPriceIncrement;
 
         endTime = time() + biddingPeriod;
-        currentPrice = initialPrice - minimumPriceIncrement;
+        currentPrice = 0;
     }
 
     function bid() public payable{
-        uint min = currentPrice + minimumPriceIncrement;
+        uint min;
+        if (currentPrice == 0) {
+            min = initialPrice;
+        }
+        else {
+            min = currentPrice + minimumPriceIncrement;
+        }
+        
         require(msg.value >= min && time() < endTime);
-
-        if (currentWinner != address(0))
-            payable(currentWinner).transfer(currentPrice);
-
+        refundToBuyer = currentPrice;
         currentPrice = msg.value;
         currentWinner = msg.sender;
         endTime = time() + biddingPeriod;

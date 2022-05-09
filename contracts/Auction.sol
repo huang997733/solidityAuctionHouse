@@ -74,7 +74,7 @@ contract Auction {
                 payable(msg.sender).transfer(moneyToSeller);
                 moneyToSeller = 0;
             }
-            else if (msg.sender == winnerAddress && refundToBuyer != 0) {
+            else if (refundToBuyer != 0) {
                 payable(msg.sender).transfer(refundToBuyer);
                 refundToBuyer = 0;
             }
