@@ -34,7 +34,7 @@ contract DutchAuction is Auction {
         require(msg.value >= currentPrice && time() < startTime + biddingPeriod && getWinner() == address(0));
         winnerAddress = msg.sender;
         winningPrice = currentPrice;
-        refundToBuyer = msg.value - currentPrice;
+        balances[msg.sender] = msg.value - currentPrice;
     }
 
 }

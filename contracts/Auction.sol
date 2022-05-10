@@ -10,8 +10,8 @@ contract Auction {
     address internal sellerAddress;
     address internal winnerAddress;
     uint winningPrice;
-    uint refundToBuyer;
-    uint moneyToSeller;
+
+    mapping(address => uint) public balances;
     bool withdrawLock;
 
     // constructor
@@ -51,7 +51,7 @@ contract Auction {
             require(msg.sender == judgeAddress || msg.sender == getWinner());
         require(getWinner() != address(0));
 
-        moneyToSeller = winningPrice;
+        balances[sellerAddress] = winningPrice;
     }
 
     // This can ONLY be called by seller or the judge (if a judge exists).
@@ -59,7 +59,7 @@ contract Auction {
     function refund() public {
         require(getWinner() != address(0));
         require(msg.sender == judgeAddress || msg.sender == sellerAddress);
-        refundToBuyer = address(this).balance;
+        balances[winnerAddress] = address(this).balance;
     }
 
     // Withdraw funds from the contract.
@@ -70,17 +70,12 @@ contract Auction {
     function withdraw() public {
         if(!withdrawLock) {
             withdrawLock = true;
-            if (msg.sender == sellerAddress && moneyToSeller != 0) {
-                payable(msg.sender).transfer(moneyToSeller);
-                moneyToSeller = 0;
+            if (balances[msg.sender] > 0) {
+                payable(msg.sender).transfer(balances[msg.sender]);
+                balances[msg.sender] = 0;
             }
-            else if (refundToBuyer != 0) {
-                payable(msg.sender).transfer(refundToBuyer);
-                refundToBuyer = 0;
-            }
-            withdrawLock = false;  
+            
+            withdrawLock = false;
         }
     }
-
-
 }

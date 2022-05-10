@@ -40,7 +40,8 @@ contract EnglishAuction is Auction {
         }
         
         require(msg.value >= min && time() < endTime);
-        refundToBuyer = currentPrice;
+        balances[currentWinner] += currentPrice;
+
         currentPrice = msg.value;
         currentWinner = msg.sender;
         endTime = time() + biddingPeriod;
@@ -52,4 +53,5 @@ contract EnglishAuction is Auction {
             return address(0);
         return currentWinner;
     }
+    
 }
