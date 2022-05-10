@@ -42,8 +42,6 @@ contract VickreyAuction is Auction {
             require(msg.value == bidDepositAmount);
         if (bids[msg.sender] != 0)
             require(msg.value == 0);
-        // if (bids[msg.sender] != 0 && msg.value > 0)
-        //     payable(msg.sender).transfer(msg.value);
         bids[msg.sender] = bidCommitment;
     }
 
@@ -54,22 +52,22 @@ contract VickreyAuction is Auction {
         require(time() >= biddingDeadline && time() < revealDeadline);
 
         if(msg.value < minimumPrice)
-            payable(msg.sender).transfer(bidDepositAmount);
+            balances[msg.sender] = bidDepositAmount+msg.value;
         
         else if(msg.value < highestBid){
-            payable(msg.sender).transfer(bidDepositAmount + msg.value);
+            balances[msg.sender] = bidDepositAmount + msg.value;
 
             if (msg.value > secondHighestBid)
                 secondHighestBid = msg.value;
         }
         else if(msg.value > highestBid){
-          if(highestBid != 0){
-            secondHighestBid = highestBid;
-            payable(winnerAddress).transfer(highestBid);
-          }
-          highestBid = msg.value;
-          winnerAddress = msg.sender;
-          payable(msg.sender).transfer(bidDepositAmount);
+            if(highestBid != 0){
+                secondHighestBid = highestBid;
+                balances[winnerAddress] = highestBid+bidDepositAmount;
+            }
+            highestBid = msg.value;
+            winnerAddress = msg.sender;
+            balances[msg.sender] = bidDepositAmount;
         }
 
     }
@@ -84,8 +82,12 @@ contract VickreyAuction is Auction {
     // based on the final sale price (the second highest bid, or reserve price).
     function finalize() public override {
         require(time() >= revealDeadline);
-        uint refund = highestBid - secondHighestBid;
-        payable(getWinner()).transfer(refund);
+        uint refund;
+        if (secondHighestBid != 0)
+            refund = highestBid - secondHighestBid;
+        else
+            refund = highestBid - minimumPrice;
+        balances[getWinner()] = bidDepositAmount+refund;
         // call the general finalize() logic
         super.finalize();
     }
